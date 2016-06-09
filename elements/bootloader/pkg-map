@@ -13,7 +13,7 @@
       "dkms_package": "",
       "extlinux": "syslinux-extlinux",
       "grub-pc": "grub2-tools grub2"
-    }
+    },
     "redhat": {
       "extlinux": "syslinux-extlinux",
       "grub-pc": "grub2-tools grub2"
