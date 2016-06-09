@@ -17,6 +17,11 @@
       "signed_shim_efi": "shim",
       "grub_bios": "grub2"
     },
+    "oracle":{
+      "signed_grub_efi": "efibootmgr grub2-efi-modules grub2-efi",
+      "signed_shim_efi": "shim",
+      "grub_bios": "grub2"
+    },
     "suse":{
       "signed_grub_efi": "",
       "signed_shim_efi": "",

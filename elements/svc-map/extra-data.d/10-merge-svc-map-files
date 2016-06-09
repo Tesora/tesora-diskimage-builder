@@ -26,6 +26,8 @@ def os_family(distro):
         family = 'redhat'
     elif distro in ['debian', 'ubuntu']:
         family = 'debian'
+    elif distro == 'oracle':
+        family = 'oracle'
     elif distro == 'opensuse':
         family = 'suse'
     return family

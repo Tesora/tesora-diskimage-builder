@@ -6,7 +6,9 @@ fi
 set -eu
 set -o pipefail
 
-if [[ ${DISTRO_NAME} =~ "centos" ]]; then
+if [[ ${DISTRO_NAME} =~ "oracle" ]]; then
+    rpm -q epel-release || yum install -y http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+elif [[ ${DISTRO_NAME} =~ "centos" ]]; then
     # Centos has "epel-release" in extras, which is default enabled.
     yum install -y epel-release
 else

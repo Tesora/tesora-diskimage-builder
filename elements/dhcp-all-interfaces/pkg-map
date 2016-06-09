@@ -3,6 +3,9 @@
     "redhat": {
       "dhcp-client": "dhclient"
     },
+    "oracle": {
+      "dhcp-client": "dhclient"
+    },
     "gentoo": {
       "dhcp-client": "net-misc/dhcpcd"
     },
