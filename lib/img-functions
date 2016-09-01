@@ -63,7 +63,7 @@ function run_in_target () {
     # Bug: #1330290
     # Force the inclusion of a typical set of dirs in PATH, this is needed for guest
     # distros that have path elements not in the host PATH.
-    sudo -E TMPDIR= chroot $TMP_MOUNT_PATH env PATH="\$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" sh -c "$cmd"
+    sudo -E chroot $TMP_MOUNT_PATH env -u TMPDIR PATH="\$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" sh -c "$cmd"
     export HOME=$ORIG_HOME
 }
 
@@ -106,7 +106,9 @@ function finalise_base () {
         fi
     fi
     # Cleanup /tmp in the guest, so there is less cruft left there
-    unmount_dir $TMP_MOUNT_PATH/tmp
+    if [ -d "$TMP_MOUNT_PATH/tmp" ]; then
+        unmount_dir $TMP_MOUNT_PATH/tmp
+    fi
     find $TMP_MOUNT_PATH/tmp -maxdepth 1 -mindepth 1 | xargs sudo rm -rf --one-file-system
 }
 
@@ -129,7 +131,7 @@ function compress_and_save_image () {
         OUT_IMAGE_PATH=$1-new
     else
         echo "Converting image using qemu-img convert"
-        qemu-img convert ${COMPRESS_IMAGE:+-c} -f raw $TMP_IMAGE_PATH -O $IMAGE_TYPE $EXTRA_OPTIONS $1-new
+        qemu-img convert ${COMPRESS_IMAGE:+-c} -f raw -O $IMAGE_TYPE $EXTRA_OPTIONS $TMP_IMAGE_PATH $1-new
     fi
 
     OUT_IMAGE_PATH=$1-new

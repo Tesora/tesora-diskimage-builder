@@ -414,7 +414,7 @@ eval_run_d block-device "IMAGE_BLOCK_DEVICE="
 sudo mkfs $MKFS_OPTS -t $FS_TYPE -L ${DIB_ROOT_LABEL} ${IMAGE_BLOCK_DEVICE}
 # Tuning the rootfs uuid works only for ext filesystems.
 if echo "$FS_TYPE" | grep -q "^ext"; then
-    sudo tune2fs ${IMAGE_BLOCK_DEVICE} -U ${DIB_IMAGE_ROOT_FS_UUID}
+    sudo tune2fs -U ${DIB_IMAGE_ROOT_FS_UUID} ${IMAGE_BLOCK_DEVICE}
 fi
 mkdir $TMP_BUILD_DIR/mnt
 sudo mount ${IMAGE_BLOCK_DEVICE} $TMP_BUILD_DIR/mnt
@@ -445,21 +445,23 @@ for X in ${!IMAGE_TYPES[@]} ; do
   elif [ "${IMAGE_TYPES[$X]}" == "docker" ]; then
     sudo tar -C ${TMP_BUILD_DIR}/mnt -cf - --exclude ./sys \
              --exclude ./proc --xattrs --xattrs-include=\* . \
-        | docker import - $DOCKER_TARGET
+        | sudo docker import - $DOCKER_TARGET
     unset IMAGE_TYPES[$X]
   fi
 done
 
-# Prep filesystem by discarding all unused space
-fstrim_image
+if [[ ! $IMAGE_ELEMENT =~ no-final-image ]]; then
+  # Prep filesystem by discarding all unused space
+  fstrim_image
+fi
 
 # Unmount and cleanup the /mnt and /build subdirectories, to save
 # space before converting the image to some other format.
 unmount_image
 cleanup_build_dir
 
-has_raw_type=
-if [ "$IS_RAMDISK" == "0" ]; then
+if [[ (! $IMAGE_ELEMENT =~ no-final-image) && "$IS_RAMDISK" == "0" ]]; then
+  has_raw_type=
   for IMAGE_TYPE in ${IMAGE_TYPES[@]} ; do
     # We have to do raw last because it is destructive
     if [ "$IMAGE_TYPE" = "raw" ]; then
@@ -468,20 +470,14 @@ if [ "$IS_RAMDISK" == "0" ]; then
       compress_and_save_image $IMAGE_NAME.$IMAGE_TYPE
     fi
   done
-fi
-if [ -n "$has_raw_type" ]; then
-  IMAGE_TYPE="raw"
-  compress_and_save_image $IMAGE_NAME.$IMAGE_TYPE
+  if [ -n "$has_raw_type" ]; then
+    IMAGE_TYPE="raw"
+    compress_and_save_image $IMAGE_NAME.$IMAGE_TYPE
+  fi
 fi
 
 # Remove the leftovers, i.e. the temporary image directory.
 cleanup_image_dir
-
-case "$IMAGE_ELEMENT" in
-  *ironic-agent*)
-    rm $IMAGE_NAME.$IMAGE_TYPE
-    ;;
-esac
 
 # All done!
 trap EXIT
