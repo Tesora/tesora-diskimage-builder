@@ -172,11 +172,12 @@ the image as executable files.
 Environment Variables
 ^^^^^^^^^^^^^^^^^^^^^
 
-To set environment variables for other hooks, add a file to your element
-``environment.d``.
-
-This directory contains bash script snippets that are sourced before running
-scripts in each phase.
+To set environment variables for other hooks, add a file to your
+element ``environment.d``.  This directory contains bash script
+snippets that are sourced before running scripts in each phase.  Note
+that because environment includes are sourced together, they should
+not set global flags like ``set -x`` because they will affect all
+preceeding imports.
 
 DIB exposes an internal ``$IMAGE_ELEMENT`` variable which provides elements
 access to the full set of elements that are included in the image build. This
@@ -384,6 +385,11 @@ your test (or a series of tests as separate arguments) on the command
 line to run it.  If it should not be run as part of the default CI
 run, you can submit a change with it added to ``DEFAULT_SKIP_TESTS``
 in that file.
+
+Running the functional tests is time consuming.  Multiple parallel
+jobs can be started by specifying ``-j <job count>``.  Each of the
+jobs uses a lot resources (CPU, disk space, RAM) - therefore the job
+count must carefully be chosen.
 
 python
 """"""
