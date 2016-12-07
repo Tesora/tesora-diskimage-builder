@@ -83,10 +83,15 @@ for i in $(find elements -type f   \
             error "$i is not executable"
         fi
 
-        # Ensure 4 spaces indent are used
-        if [[ "$(file -b -k --mime-type $i)" =~ "text/x-python" ]]; then
+        # run flake8 over python files.  note our "dib-python"
+        # interpreter can confuse the magic matching being done in
+        # "file" and make it think the file is not python;
+        # special-case it.
+        if [[ "$(file -b -k --mime-type $i)" =~ "text/x-python" ]] || \
+               [[ $firstline =~ "dib-python" ]]; then
             flake8 $i || error "$i failed flake8"
         else
+            # Ensure 4 spaces indent are used
             if ! excluded indent ; then
                 indent_regex='^\( \{4\}\)* \{1,3\}[^ ]'
                 if grep -q "$indent_regex" ${i}; then
@@ -151,10 +156,14 @@ for i in $(find elements -type f   \
         fi
     fi
 
-    # check that environment files don't "set -x"
+    # check that environment files don't "set -x" and they have no executable
+    # bits set
     if [[ "$i" =~ (environment.d) ]]; then
         if grep -q "set -x" $i; then
             error "Environment file $i should not set tracing"
+        fi
+        if [[ -x $i ]]; then
+            error "Environment file $i should not be marked as executable"
         fi
     fi
 
