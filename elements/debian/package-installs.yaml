@@ -1,4 +1,3 @@
-openssh-server:
 file:
 less:
 kbd:
@@ -10,3 +9,4 @@ net-tools:
 cloud-init:
 cloud-utils:
 cloud-initramfs-growroot:
+dialog:

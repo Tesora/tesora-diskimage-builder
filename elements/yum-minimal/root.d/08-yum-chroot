@@ -56,6 +56,7 @@ _RPM="rpm --dbpath=/var/lib/rpm"
 # has yum/yumdownloader
 function _install_repos {
     local packages
+    local rc
 
     # pre-install the base system packages via rpm.  We previously
     # just left it up to yum to drag these in when we "yum install
@@ -79,11 +80,21 @@ function _install_repos {
         packages+="${DISTRO_NAME}-repos "
     fi
 
-    yumdownloader \
+    # yumdownloader puts repo xml files and such into a directory
+    # ${TMPDIR}/yum-$USER-random.  Since we don't need this once the
+    # initial download happens, redirect TMPDIR for this call so we
+    # can clean it up nicely
+    local temp_tmp
+    temp_tmp=$(mktemp -d)
+    TMPDIR=${temp_tmp} yumdownloader \
         --releasever=$DIB_RELEASE \
         --setopt=reposdir=$TMP_HOOKS_PATH/yum.repos.d \
         --destdir=$WORKING \
-        ${packages}
+        ${packages} && rc=$? || rc=$?
+    rm -rf ${temp_tmp}
+    if [[ ${rc} != 0 ]]; then
+        die "Failed to download initial packages: ${packages}"
+    fi
 
     # --nodeps works around these wanting /bin/sh in some fedora
     # releases, see rhbz#1265873
@@ -231,7 +242,17 @@ else
     sudo -E chroot $TARGET_ROOT ${YUM} -y update
     sudo -E chroot $TARGET_ROOT ${YUM} -y \
         --setopt=cachedir=/tmp/yum/$ARCH/$DIB_RELEASE \
-        install passwd findutils sudo util-linux-ng
+        install systemd passwd findutils sudo util-linux-ng
+
+    # This package is split out from systemd on >F24, dracut is
+    # missing the dependency and will fail to make an initrd without
+    # it; see
+    #  https://bugzilla.redhat.com/show_bug.cgi?id=1398505
+    if [ $DISTRO_NAME = "fedora" -a $DIB_RELEASE -ge 24 ]; then
+        sudo -E chroot $TARGET_ROOT ${YUM} -y \
+            --setopt=cachedir=/tmp/yum/$ARCH/$DIB_RELEASE \
+            install systemd-udev
+    fi
 
     # Put in a dummy /etc/resolv.conf over the temporary one we used
     # to bootstrap.  systemd has a bug/feature [1] that it will assume
